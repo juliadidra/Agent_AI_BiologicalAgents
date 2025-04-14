@@ -1,0 +1,9 @@
+services:
+
+  waha:
+    image: devlikeapro/waha:latest
+    container_name: Ai_agent_biologicalAgents_waha
+    restart: always
+
+    ports:
+      - '3000:3000'
