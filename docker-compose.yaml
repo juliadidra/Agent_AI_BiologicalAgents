@@ -7,3 +7,12 @@ services:
 
     ports:
       - '3000:3000'
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: wpp_agent_api
+    ports:
+      - '8000:8000'
+
