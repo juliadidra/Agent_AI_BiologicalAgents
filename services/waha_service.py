@@ -1,11 +1,16 @@
 import requests
+from config.settings import Settings
+from helpers.WahaHelpers import WahaHelpers
 
 class WahaService:
     def __init__(self):
-        self.__api_url = "http://waha:3000"
+        self.properties = Settings()
 
     def send_message(self, chat_id, message):
-        url = f"{self.__api_url}/api/sendText"
+        if(WahaHelpers.block_group_messages(chat_id)):
+            return
+        
+        url = f"{self.properties.API_URL}/api/sendText"
         headers = {
             'Content-Type': 'application/json',
         }
@@ -17,7 +22,11 @@ class WahaService:
         response = requests.post(url=url, json=payload, headers=headers)
     
     def start_typing(self, chat_id):
-        url = f"{self.__api_url}/api/startTyping"
+
+        if(WahaHelpers.block_group_messages(chat_id)):
+            return
+
+        url = f"{self.properties.API_URL}/api/startTyping"
         headers = {
             'Content-Type': 'application/json',
         }
@@ -29,7 +38,7 @@ class WahaService:
         response = requests.post(url=url, json=payload, headers=headers)
 
     def stop_typing(self, chat_id):
-        url = f"{self.__api_url}/api/stopTyping"
+        url = f"{self.properties.API_URL}/api/stopTyping"
         headers = {
             'Content-Type': 'application/json',
         }
