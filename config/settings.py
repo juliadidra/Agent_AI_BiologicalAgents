@@ -7,3 +7,4 @@ class Settings:
     def __init__(self):
         self.API_URL = os.getenv('API_URL')
         self.GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+        self.HUGGINGFACE_API_KEY = os.getenv('HUGGINGFACE_API_KEY')

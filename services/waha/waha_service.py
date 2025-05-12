@@ -49,3 +49,15 @@ class WahaService:
         }
         response = requests.post(url=url, json=payload, headers=headers)
 
+    def get_history_messages(self, chat_id, limit):
+        url = f'{self.properties.API_URL}/api/default/chats/{chat_id}/messages?limit={limit}&downloadMedia=false'
+        headers = {
+            'Content-Type': 'application/json',
+        }
+        response = requests.get(
+            url=url,
+            headers=headers,
+        )
+        return response.json()
+
+

@@ -29,9 +29,11 @@ async def agent_webhook(request: Request):
 
     waha.start_typing(chat_id=chat_id)
 
-    response = ai_agent.invoke(user_message=receveid_message)
+    history_messages = waha.get_history_messages(chat_id=chat_id, limit=10)
 
-    waha.send_message(chat_id=chat_id, message=response)
+    response_message = ai_agent.invoke(history_messages=history_messages, question=receveid_message)
+    
+    waha.send_message(chat_id=chat_id, message=response_message)
 
     waha.stop_typing(chat_id=chat_id)
 

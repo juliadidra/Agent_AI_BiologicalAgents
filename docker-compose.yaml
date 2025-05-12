@@ -15,4 +15,7 @@ services:
     container_name: wpp_agent_api
     ports:
       - '8000:8000'
+    volumes:
+      - .:/app
+      - ./chroma_data:/app/chroma_data
 
