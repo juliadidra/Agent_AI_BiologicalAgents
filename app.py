@@ -31,7 +31,7 @@ async def agent_webhook(request: Request):
 
     history_messages = waha.get_history_messages(chat_id=chat_id, limit=10)
 
-    response_message = ai_agent.invoke(history_messages=history_messages, question=receveid_message)
+    response_message = ai_agent.create_prompt(history_messages=history_messages, question=receveid_message)
     
     waha.send_message(chat_id=chat_id, message=response_message)
 

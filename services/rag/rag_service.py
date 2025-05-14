@@ -11,7 +11,7 @@ os.environ['GROQ_API_KEY'] = properties.GROQ_API_KEY
 os.environ['HUGGINGFACE_API_KEY'] = properties.HUGGINGFACE_API_KEY
 
 if __name__ == '__main__':
-    file_path = '/app/services/rag/data/PCDT.pdf'
+    file_path = '/app/services/rag/data/PCDT_Tratado.pdf'
     loader = PyPDFLoader(file_path)
     docs = loader.load()
 

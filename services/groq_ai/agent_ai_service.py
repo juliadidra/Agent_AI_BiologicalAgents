@@ -13,7 +13,7 @@ class AIAgentService:
     def __init__(self):
         properties = Settings()
         os.environ['GROQ_API_KEY'] = properties.GROQ_API_KEY
-        self.__chat = ChatGroq(model='llama-3.3-70b-versatile')
+        self.__chat = ChatGroq(model=properties.GROQ_AI_MODEL)
         self.__retriever = self.__build_retriever()
 
     def __build_retriever(self):
@@ -29,18 +29,19 @@ class AIAgentService:
         )
     
     def __build_messages(self, history_messages, question):
+        MAX_HISTORY_MESSAGES = 5
         messages = []
-        for message in history_messages:
+        for message in history_messages[-MAX_HISTORY_MESSAGES:]:
             message_class = HumanMessage if message.get('fromMe') else AIMessage
             messages.append(message_class(content=message.get('body')))
         messages.append(HumanMessage(content=question))
         return messages
 
 
-    def invoke(self, history_messages, question):
+    def create_prompt(self, history_messages, question):
         SYSTEM_TEMPLATE = '''
         Responda as perguntas dos usuários com base no contexto abaixo.
-        Você é um assistente especializado em tirar dúvidas e prestar auxilio a pacientes de um pronto atendimento que é especializado em exposição a agentes biológicos.
+        Você é um assistente especializado em tirar dúvidas e prestar auxilio á pacientes que foram expostos a agentes biológicos.
         Você deve tirar dúvidas dos pacientes, prestar apoio emocional (se necessário) e também terá o papel de relembrar aos paciente que tome as medicações indicadas para cada caso.
 
         Instruções:
@@ -49,7 +50,6 @@ class AIAgentService:
         - Você deve sempre se lembrar de que o paciente pode estar em um estado emocional delicado e que você deve ser gentil e compreensivo.
         - Suas respostas devem ser claras e objetivas, evitando jargões médicos complexos.
         - importante: Responda de forma curta, para que seja uma conversa fluida e natural.
-            - Sua resposta NAO deve ser grande, como um texto longo.
 
         Responda de forma natural, agradável e respeitosa. Seja objetivo nas respostas, com informações
         claras e diretas. Foque em ser natural e humanizado, como um diálogo comum entre duas pessoas.
