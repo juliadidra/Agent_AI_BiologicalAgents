@@ -24,14 +24,18 @@ async def agent_webhook(request: Request):
     waha = WahaService()
     ai_agent = AIAgentService()
 
-    chat_id = data['payload']['from']
+    print("data payload: ", data.get("payload").get("from")
+)
+    chat_id = data.get("payload").get("from")
+
     receveid_message = data['payload']['body']
 
     waha.start_typing(chat_id=chat_id)
 
     history_messages = waha.get_history_messages(chat_id=chat_id, limit=10)
 
-    response_message = ai_agent.create_prompt(history_messages=history_messages, question=receveid_message)
+    response_message = ai_agent.create_prompt(history_messages=history_messages, question=receveid_message, chat_id=chat_id)
+    print("response_message: ", response_message)
     
     waha.send_message(chat_id=chat_id, message=response_message)
 
