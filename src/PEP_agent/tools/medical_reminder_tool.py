@@ -38,7 +38,7 @@ class MedicationReminderTool:
             f"Você receberá lembretes diários até {fim}."
         )
 
-        print(f"[INFO] Tratamento registrado para {chat_id} ({medicamento} - {tratamento})")
+        # print(f"[INFO] Tratamento registrado para {chat_id} ({medicamento} - {tratamento})")
 
 
 # Função wrapper para LangChain Tool
@@ -54,7 +54,7 @@ def registrar_tratamento(chat_id: str, medicamento: str, tratamento: str, inicio
         waha_service = WahaService()
         tool = MedicationReminderTool(waha_service)
         tool.execute(chat_id, medicamento, tratamento, inicio, fim)
-        return f"Tratamento com {medicamento} registrado para o usuário {chat_id}."
+        return f"Tratamento com {medicamento} registrado."
     except Exception as e:
         print(f"[ERRO] Falha ao registrar tratamento: {e}")
         return "Ocorreu um erro ao registrar o tratamento. Por favor, tente novamente."

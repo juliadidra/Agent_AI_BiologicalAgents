@@ -1,3 +1,5 @@
+from datetime import date
+import json
 import os
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_chroma import Chroma
@@ -5,6 +7,8 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_core.tools import tool
+
 
 from config.settings import Settings
 from tools.medical_reminder_tool import registrar_tratamento
@@ -18,10 +22,11 @@ class AIAgentService:
         os.environ['GROQ_API_KEY'] = properties.GROQ_API_KEY
         tool = [registrar_tratamento]
         chat = ChatGroq(model=properties.GROQ_AI_MODEL)
-        self.__chat = chat.bind_tools(tool, tool_choice="auto")
+        self.__chat = chat.bind_tools(tools=tool, tool_choice={"type": "function", "function": {"name": "registrar_tratamento"}})
+        print("Chat model initialized with tools:", self.__chat)
+        # self.__chat = chat
         self.__retriever = self.__build_retriever()
 
-        
 
     def __build_retriever(self):
         persist_directory = '/app/chroma_data'
@@ -32,20 +37,32 @@ class AIAgentService:
             embedding_function=embedding,
         )
         return vector_store.as_retriever(
-            search_kwargs={'k': 30},
+            search_kwargs={'k': 5},
         )
     
-    def __build_messages(self, history_messages, question):
-        MAX_HISTORY_MESSAGES = 5
-        messages = []
-        for message in history_messages[-MAX_HISTORY_MESSAGES:]:
-            message_class = HumanMessage if message.get('fromMe') else AIMessage
-            messages.append(message_class(content=message.get('body')))
-        messages.append(HumanMessage(content=question))
-        return messages
+    @tool
+    def greet(name: str) -> str:
+        """
+        recebe o nome do usuario e Saúda o usuário pelo nome.
+        """
+        return f"Olá, {name}! Como posso ajudar você hoje?"
+    
+    # def __build_messages(self, history_messages, question):
+    #     MAX_HISTORY_MESSAGES = 5
+    #     messages = []
+    #     filtered_history = [
+    #     m for m in history_messages[-MAX_HISTORY_MESSAGES:]
+    #     if m.get('body') and m.get('body').strip()
+    #     ]
+    #     for message in filtered_history[-MAX_HISTORY_MESSAGES:]:
+    #         message_class = HumanMessage if message.get('fromMe') else AIMessage
+    #         messages.append(message_class(content=message.get('body')))
+    #     messages.append(HumanMessage(content=question))
+    #     return messages
 
 
     def create_prompt(self, history_messages, question, chat_id):
+        hoje = date.today().isoformat()
         SYSTEM_TEMPLATE = '''
         Responda as perguntas dos usuários com base no contexto abaixo.
         Você é um assistente especializado em tirar dúvidas e prestar auxilio á pacientes que foram expostos a agentes biológicos.
@@ -72,6 +89,8 @@ class AIAgentService:
                     - Caso o paciente solicite o serviço de lembretes voce deve pedir as informações necessarias para o agendamento:
                         - nome do medicamento, o tratamento (se é para hiv, sifilis ou hepatite), a data inicial e final do tratamento.
                             - IMPORTANTE: Caso o paciente nao saiba mencionar a data final, voce deve usar as informações do seu contexto, identificando a duração do tratamento e calculando a data final baseando-se da na data inicial fornecida. (ex: 30 dias após a data inicial)
+                
+            - para fins de contexto (caso o usuario nao saiba mencionar a data inicial ou ele indique que esta data é hoje) voce deve considerar a data de hoje: {hoje}
 
 
         Responda de forma natural, agradável e respeitosa. Seja objetivo nas respostas, com informações
@@ -85,41 +104,49 @@ class AIAgentService:
         '''.format(chat_id=chat_id)
 
         docs = self.__retriever.invoke(question)
-        MAX_DOCS = 5  # limite de documentos
+        MAX_DOCS = 1
         docs = docs[:MAX_DOCS]
 
-        question_answering_prompt = ChatPromptTemplate.from_messages(
-            [
-                (
-                    'system',
-                    SYSTEM_TEMPLATE,
-                ),
-                MessagesPlaceholder(variable_name='messages'),
+        # Monte as mensagens para o modelo
+        messages = [
+            {"role": "system", "content": SYSTEM_TEMPLATE.replace("{{context}}", "\n".join([d.page_content for d in docs]))}
+        ]
+        # Adicione histórico filtrado
+        if (isinstance(history_messages, list)):
+            messages.append({"role": "user", "content": history_messages[0]})
+            messages.append({"role": "user", "content": question})
+           
+        else:
+            filtered_history = [
+                m for m in history_messages[-5:]
+                if m.get('body') and m.get('body').strip()
             ]
-        )
-        document_chain = create_stuff_documents_chain(self.__chat, question_answering_prompt)
-        print("chamada llm: ", self.__chat)
-
-        print("docs: ", docs)
+            for message in filtered_history:
+                role = "user" if message.get('fromMe') else "assistant"
+                messages.append({"role": role, "content": message.get('body')})
+            # Adicione a pergunta atual
+            messages.append({"role": "user", "content": question})
 
         try:
-            response = document_chain.invoke(
-                {
-                    'context': docs,
-                    'messages': self.__build_messages(history_messages, question),
-                }
-            )
-
-            # print("messages: ", response["messages"])
-
-            print("response: ", response)
-            if isinstance(response, dict):
-                if "tool_calls" in response:
-                    print("[LOG] Tool chamada pela IA:", response["tool_calls"])
-                elif "function_call" in response:
-                    print("[LOG] Function call detectada:", response["function_call"])
-                elif "content" in response:
-                    print("[LOG] Conteúdo da resposta:", response["content"])
-            return response 
+            response = self.__chat.invoke(messages)
+            print("response:", response)
+            # Se houver tool_calls, logue
+            if hasattr(response, "tool_calls"):
+                print("[LOG] Tool chamada pela IA:", response.tool_calls)
+                for tool_call in response.tool_calls:
+                    tool_name = tool_call["name"]
+                    args = tool_call["args"]
+                    # Se os argumentos vierem como string JSON, faça o parse
+                    if isinstance(args, str):
+                        args = json.loads(args)
+                    # Chame a função Python correspondente
+                    if tool_name == "registrar_tratamento":
+                        result = registrar_tratamento.invoke(args)
+                        return result
+                    # Adicione outros tools aqui conforme necessário
+                return "Tool chamada, mas não implementada."
+            # Se não houver tool_calls, retorne o conteúdo normal
+            return getattr(response, "content", "")
         except Exception as e:
             print(f"Error during response generation: {e}")
+            return "Ocorreu um erro ao processar sua solicitação."

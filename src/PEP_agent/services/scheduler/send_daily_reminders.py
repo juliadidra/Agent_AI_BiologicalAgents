@@ -25,6 +25,10 @@ def send_daily_reminders():
                 "\nResponda SIM ou NÃO para registrar."
             )
             waha_service.send_message(data["chatId"], mensagem)
+        else:
+            # Marca como inativo se o período terminou
+            if hoje > data["fim"]:
+                db.collection("tratamentos").document(t.id).update({"status": "inativo"})
 
 if __name__ == "__main__":
     send_daily_reminders()
