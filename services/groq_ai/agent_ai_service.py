@@ -91,6 +91,7 @@ class AIAgentService:
                             - IMPORTANTE: Caso o paciente nao saiba mencionar a data final, voce deve usar as informações do seu contexto, identificando a duração do tratamento e calculando a data final baseando-se da na data inicial fornecida. (ex: 30 dias após a data inicial)
                 
             - para fins de contexto (caso o usuario nao saiba mencionar a data inicial ou ele indique que esta data é hoje) voce deve considerar a data de hoje: {hoje}
+            - IMPORTANTE: As datas devem estar no formato ISO (YYYY-MM-DD). Por mais que o usuario mencione a data em outro formato, voce deve sempre converter para o formato YYYY-MM-DD.
 
 
         Responda de forma natural, agradável e respeitosa. Seja objetivo nas respostas, com informações
@@ -101,7 +102,7 @@ class AIAgentService:
         <context>
         {{context}}
         </context>
-        '''.format(chat_id=chat_id)
+        '''.format(chat_id=chat_id, hoje=hoje)
 
         docs = self.__retriever.invoke(question)
         MAX_DOCS = 1
@@ -112,20 +113,20 @@ class AIAgentService:
             {"role": "system", "content": SYSTEM_TEMPLATE.replace("{{context}}", "\n".join([d.page_content for d in docs]))}
         ]
         # Adicione histórico filtrado
-        if (isinstance(history_messages, list)):
-            messages.append({"role": "user", "content": history_messages[0]})
-            messages.append({"role": "user", "content": question})
+        # if (isinstance(history_messages, list)):
+        #     messages.append({"role": "user", "content": history_messages[0]})
+        #     messages.append({"role": "user", "content": question})
            
-        else:
-            filtered_history = [
-                m for m in history_messages[-5:]
-                if m.get('body') and m.get('body').strip()
-            ]
-            for message in filtered_history:
-                role = "user" if message.get('fromMe') else "assistant"
-                messages.append({"role": role, "content": message.get('body')})
-            # Adicione a pergunta atual
-            messages.append({"role": "user", "content": question})
+        # else:
+        filtered_history = [
+            m for m in history_messages[-5:]
+            if m.get('body') and m.get('body').strip()
+        ]
+        for message in filtered_history:
+            role = "user" if message.get('fromMe') else "assistant"
+            messages.append({"role": role, "content": message.get('body')})
+        # Adicione a pergunta atual
+        messages.append({"role": "user", "content": question})
 
         try:
             response = self.__chat.invoke(messages)

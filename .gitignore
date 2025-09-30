@@ -220,4 +220,4 @@ target/
 
 # Rapid test data
 testdata
-tccbiologicalagents-firebase-adminsdk-fbsvc-ccc89fd36c.json
+firebase-credentials.json

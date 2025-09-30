@@ -1,1 +1,11 @@
+.git
+.gitignore
+.env
+.vscode
 .venv
+venv
+__pycache__
+*.pyc
+chroma_data
+firebase-credentials.json
+*.log

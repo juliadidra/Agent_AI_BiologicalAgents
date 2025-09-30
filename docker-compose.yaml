@@ -19,3 +19,21 @@ services:
       - .:/app
       - ./chroma_data:/app/chroma_data
 
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.scheduler
+    container_name: send_daily_reminders
+    depends_on:
+      - waha
+    volumes:
+      - .:/app
+      - ./chroma_data:/app/chroma_data
+      - ./firebase-credentials.json:/app/firebase-credentials.json:ro
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-credentials.json
+      # WAHA_URL can be overridden to point to a different host/IP where the waha service is reachable.
+      - WAHA_URL=http://waha:3000
+      - TZ=America/Sao_Paulo
+    restart: always
+

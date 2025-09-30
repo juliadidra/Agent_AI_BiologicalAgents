@@ -11,7 +11,7 @@ class MedicationReminderTool:
 
         # Inicializa Firebase apenas uma vez
         if not firebase_admin._apps:
-            cred = credentials.Certificate("tccbiologicalagents-firebase-adminsdk-fbsvc-ccc89fd36c.json")
+            cred = credentials.Certificate("firebase-credentials.json")
             firebase_admin.initialize_app(cred)
 
         self.db = firestore.client()
