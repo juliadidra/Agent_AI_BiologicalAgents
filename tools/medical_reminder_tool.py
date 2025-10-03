@@ -20,41 +20,56 @@ class MedicationReminderTool:
         """
         Salva o tratamento no Firebase e agenda lembretes diários.
         """
-        # Salva no banco
-        self.db.collection("tratamentos").add({
-            "chatId": chat_id,
-            "medicamento": medicamento,
-            "tratamento": tratamento,
-            "inicio": inicio,
-            "fim": fim,
-            "status": "ativo",
-            "createdAt": datetime.now().isoformat()
-        })
+        
+        existing = self.db.collection("tratamentos")\
+        .where("chatId", "==", chat_id)\
+        .where("medicamento", "==", medicamento)\
+        .where("status", "==", "ativo")\
+        .stream()
+    
+        if any(existing):
+            print("[INFO] Tratamento já existente, não registrando novamente.")
+            return f"Tratamento com {medicamento} já está ativo e não foi duplicado."
+        
+        else:
+            # Salva no banco
+            self.db.collection("tratamentos").add({
+                "chatId": chat_id,
+                "medicamento": medicamento,
+                "tratamento": tratamento,
+                "inicio": inicio,
+                "fim": fim,
+                "status": "ativo",
+                "createdAt": datetime.now().isoformat()
+            })
 
-        # Confirma para o paciente
-        self.waha_service.send_message(
-            chat_id,
-            f"✅ Seu tratamento com {medicamento} ({tratamento}) foi registrado. "
-            f"Você receberá lembretes diários até {fim}."
-        )
+            # Confirma para o paciente
+            self.waha_service.send_message(
+                chat_id,
+                f"✅ Seu tratamento com {medicamento} ({tratamento}) foi registrado. "
+                f"Você receberá lembretes diários até {fim}."
+            )
 
         # print(f"[INFO] Tratamento registrado para {chat_id} ({medicamento} - {tratamento})")
 
 
 # Função wrapper para LangChain Tool
 @tool
-def registrar_tratamento(chat_id: str, medicamento: str, tratamento: str, inicio: str, fim: str) -> str:
+def schedule_medication_treatment(chat_id: str, medicamento: str, tratamento: str, inicio: str, fim: str) -> str:
     """
-    Registra um tratamento médico e agenda lembretes diários para o paciente.
+    Registers a new medical treatment for a patient and schedules daily reminders. 
+    This tool should only be called if the patient does not already have a treatment scheduled. 
+    If the patient already has an active treatment, you must continue the conversation normally 
+    without offering to schedule another treatment.
     """
-    # Importe ou instancie seu serviço waha_service conforme necessário
+
     try:
         print("[DEBUG] Tool chamada!")
         from services.waha.waha_service import WahaService
         waha_service = WahaService()
         tool = MedicationReminderTool(waha_service)
-        tool.execute(chat_id, medicamento, tratamento, inicio, fim)
-        return f"Tratamento com {medicamento} registrado."
+        response = tool.execute(chat_id, medicamento, tratamento, inicio, fim)
+        return response
     except Exception as e:
         print(f"[ERRO] Falha ao registrar tratamento: {e}")
         return "Ocorreu um erro ao registrar o tratamento. Por favor, tente novamente."
