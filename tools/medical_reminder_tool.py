@@ -50,10 +50,7 @@ class MedicationReminderTool:
                 f"Você receberá lembretes diários até {fim}."
             )
 
-        # print(f"[INFO] Tratamento registrado para {chat_id} ({medicamento} - {tratamento})")
 
-
-# Função wrapper para LangChain Tool
 @tool
 def schedule_medication_treatment(chat_id: str, medicamento: str, tratamento: str, inicio: str, fim: str) -> str:
     """

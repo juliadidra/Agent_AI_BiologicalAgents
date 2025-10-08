@@ -1,13 +1,9 @@
 from datetime import date
 import json
 import os
-from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_chroma import Chroma
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_core.tools import tool
 
 
 from config.settings import Settings
@@ -24,7 +20,6 @@ class AIAgentService:
         chat = ChatGroq(model=properties.GROQ_AI_MODEL)
         self.__chat = chat.bind_tools(tools=tool)
         print("Chat model initialized with tools:", self.__chat)
-        # self.__chat = chat
         self.__retriever = self.__build_retriever()
 
 
@@ -40,26 +35,6 @@ class AIAgentService:
             search_kwargs={'k': 5},
         )
     
-    @tool
-    def greet(name: str) -> str:
-        """
-        recebe o nome do usuario e Saúda o usuário pelo nome.
-        """
-        return f"Olá, {name}! Como posso ajudar você hoje?"
-    
-    # def __build_messages(self, history_messages, question):
-    #     MAX_HISTORY_MESSAGES = 5
-    #     messages = []
-    #     filtered_history = [
-    #     m for m in history_messages[-MAX_HISTORY_MESSAGES:]
-    #     if m.get('body') and m.get('body').strip()
-    #     ]
-    #     for message in filtered_history[-MAX_HISTORY_MESSAGES:]:
-    #         message_class = HumanMessage if message.get('fromMe') else AIMessage
-    #         messages.append(message_class(content=message.get('body')))
-    #     messages.append(HumanMessage(content=question))
-    #     return messages
-
 
     def create_prompt(self, history_messages, question, chat_id):
         hoje = date.today().isoformat()
@@ -115,12 +90,7 @@ class AIAgentService:
         messages = [
             {"role": "system", "content": SYSTEM_TEMPLATE.replace("{{context}}", "\n".join([d.page_content for d in docs]))}
         ]
-        # Adicione histórico filtrado
-        # if (isinstance(history_messages, list)):
-        #     messages.append({"role": "user", "content": history_messages[0]})
-        #     messages.append({"role": "user", "content": question})
-           
-        # else:
+
         filtered_history = [
             m for m in history_messages[-5:]
             if m.get('body') and m.get('body').strip()
@@ -128,28 +98,22 @@ class AIAgentService:
         for message in filtered_history:
             role = "user" if message.get('fromMe') else "assistant"
             messages.append({"role": role, "content": message.get('body')})
-        # Adicione a pergunta atual
         messages.append({"role": "user", "content": question})
 
         try:
             response = self.__chat.invoke(messages)
             print("response:", response)
-            # Se houver tool_calls, logue
             if hasattr(response, "tool_calls"):
                 print("[LOG] Tool chamada pela IA:", response.tool_calls)
                 for tool_call in response.tool_calls:
                     tool_name = tool_call["name"]
                     args = tool_call["args"]
-                    # Se os argumentos vierem como string JSON, faça o parse
                     if isinstance(args, str):
                         args = json.loads(args)
-                    # Chame a função Python correspondente
                     if tool_name == "schedule_medication_treatment":
                         result = schedule_medication_treatment.invoke(args)
                         return result
-                    # Adicione outros tools aqui conforme necessário
-                # return "Tool chamada, mas não implementada."
-            # Se não houver tool_calls, retorne o conteúdo normal
+
             return getattr(response, "content", "")
         except Exception as e:
             print(f"Error during response generation: {e}")
