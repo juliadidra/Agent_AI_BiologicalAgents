@@ -37,7 +37,7 @@ services:
       - WAHA_URL=http://waha:3000
       # Time to run the daily job (HH:MM 24-hour). Default: 09:00
       - SCHEDULE_TIME=09:00
-      - SCHEDULE_INTERVAL_MINUTES=2
+      # - SCHEDULE_INTERVAL_MINUTES=2
       - TZ=America/Sao_Paulo
     restart: always
 
