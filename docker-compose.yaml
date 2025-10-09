@@ -4,6 +4,8 @@ services:
     image: devlikeapro/waha:latest
     container_name: Ai_agent_biologicalAgents_waha
     restart: always
+    expose:
+      - "3000"
 
     ports:
       - '3000:3000'
@@ -13,8 +15,7 @@ services:
       - WAHA_DASHBOARD_ENABLED=true
       - WAHA_DASHBOARD_USERNAME=agent_ai!
       - WAHA_DASHBOARD_PASSWORD=Agent_ai123!
-    expose:
-      - "3000"
+    
 
   api:
     build:
@@ -57,5 +58,7 @@ proxy:
     depends_on:
       - waha
       - api
+    ports:
+      - "80:80"   # porta pública
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
