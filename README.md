@@ -9,7 +9,7 @@
 HUGGINGFACE_API_KEY=
 GROQ_API_KEY=
 GROQ_AI_MODEL=llama-3.3-70b-versatile
-API_URL=http://waha:3000
+WAHA_URL=http://waha:3000
 
 ## Scheduler (lembretes diários)
 

@@ -7,8 +7,8 @@ class WahaService:
     def __init__(self):
         self.properties = Settings()
         # Ensure base URL has no trailing slash
-        if self.properties.API_URL:
-            self.base_url = self.properties.API_URL.rstrip('/')
+        if self.properties.WAHA_URL:
+            self.base_url = self.properties.WAHA_URL.rstrip('/')
         else:
             self.base_url = 'http://waha:3000'
 

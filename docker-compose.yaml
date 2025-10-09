@@ -8,8 +8,11 @@ services:
     ports:
       - '3000:3000'
     environment:
-      - WHATSAPP_HOOK_URL=http://api:8000/agent/webhook/
+      - WHATSAPP_HOOK_URL=https://agentaibiologicalagents-production.up.railway.app/agent/webhook/
       - WHATSAPP_HOOK_EVENTS=message
+      - WAHA_DASHBOARD_ENABLED=true
+      - WAHA_DASHBOARD_USERNAME=agent_ai!
+      - WAHA_DASHBOARD_PASSWORD=Agent_ai123!
 
   api:
     build:

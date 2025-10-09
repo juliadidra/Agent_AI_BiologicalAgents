@@ -5,9 +5,9 @@ load_dotenv()
 
 class Settings:
     def __init__(self):
-        # Prefer explicit API_URL, fall back to WAHA_URL (helpful when services run on different hosts)
+        # Prefer explicit WAHA_URL, fall back to WAHA_URL (helpful when services run on different hosts)
         # Default to the compose service name used in Docker networks.
-        self.API_URL = os.getenv('API_URL') or os.getenv('WAHA_URL') or 'http://waha:3000'
+        self.WAHA_URL = os.getenv('WAHA_URL') or 'http://waha:3000'
         self.GROQ_API_KEY = os.getenv('GROQ_API_KEY')
         self.HUGGINGFACE_API_KEY = os.getenv('HUGGINGFACE_API_KEY')
         self.GROQ_AI_MODEL = os.getenv('GROQ_AI_MODEL')
