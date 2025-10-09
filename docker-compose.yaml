@@ -7,6 +7,9 @@ services:
 
     ports:
       - '3000:3000'
+    environment:
+      - WHATSAPP_HOOK_URL=http://api:8000/agent/webhook/
+      - WHATSAPP_HOOK_EVENTS=message
 
   api:
     build:
