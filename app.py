@@ -4,6 +4,19 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from services.groq_ai.agent_ai_service import AIAgentService
 from services.waha.waha_service import WahaService
+import logging
+import sys
+import traceback
+from datetime import date, datetime
+
+import firebase_admin
+from firebase_admin import credentials, firestore
+from services.waha.waha_service import WahaService
+
+
+# Configure logging to stdout so cron redirection captures it
+logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
+logger = logging.getLogger(__name__)
 
 
 app = FastAPI()
@@ -52,33 +65,65 @@ async def agent_webhook(request: Request):
 
     return JSONResponse(status_code=200, content={"message": "Message sent!"})
 
-# class SendMessageBody(BaseModel):
-#     question: str
+@app.post('/agent/daily-reminders')
+def initialize_firebase():
+    try:
+        cred = credentials.Certificate("firebase-credentials.json")
+        firebase_admin.initialize_app(cred)
+        db = firestore.client()
+        logger.info("Firebase initialized")
+        return db
+    except Exception:
+        logger.exception("Failed to initialize Firebase (check firebase-credentials.json mount and contents)")
+        raise
 
-# @app.post('/agent/send_message')
-# async def agent_send_message(body: SendMessageBody):
-#     # data = await request.json() 
-#     # print("received_data", data)
 
-#     # waha = WahaService()
-#     ai_agent = AIAgentService()
+def send_daily_reminders():
+    db = initialize_firebase()
+    waha_service = WahaService()
 
-#     # print("data payload: ", data.get("payload").get("from"))
-#     # chat_id = data.get("payload").get("from")
+    hoje = date.today()
+    logger.info("Running send_daily_reminders for date=%s", hoje.isoformat())
 
-#     # receveid_message = data['payload']['body']
+    # Busca todos os tratamentos ativos
+    try:
+        tratamentos = db.collection("tratamentos").where("status", "==", "ativo").stream()
+    except Exception:
+        logger.exception("Failed to query tratamentos collection")
+        return
 
-#     # waha.start_typing(chat_id=chat_id)
+    sent = 0
+    for t in tratamentos:
+        data = t.to_dict()
+        try:
+            inicio = datetime.fromisoformat(data.get("inicio")).date()
+            fim = datetime.fromisoformat(data.get("fim")).date()
+        except Exception:
+            logger.exception("Invalid date format for tratamento id=%s: %s", getattr(t, 'id', '<unknown>'), data)
+            continue
 
-#     history_messages = ["ola", "tudo bem?", "como posso ajudar?"]
-#     chat_id = 123
+        logger.info("Checking tratamento id=%s medicamento=%s inicio=%s fim=%s", getattr(t, 'id', '<unknown>'), data.get('medicamento'), inicio, fim)
 
-#     response_message = ai_agent.create_prompt(history_messages=history_messages, question=body.question, chat_id=chat_id)
-#     print("response_message: ", response_message)
-    
-#     # waha.send_message(chat_id=chat_id, message=response_message)
+        # Só envia se hoje está dentro do período
+        if inicio <= hoje <= fim:
+            mensagem = (
+                f"💊 Olá! Já tomou sua medicação **{data.get('medicamento')}** hoje?"
+                "\nResponda SIM ou NÃO para registrar."
+            )
+            try:
+                logger.info("Sending message to chatId=%s", data.get('chatId'))
+                waha_service.send_message(data.get("chatId"), mensagem)
+                sent += 1
+                logger.info("Message sent to %s", data.get('chatId'))
+            except Exception:
+                logger.exception("Failed to send message to %s", data.get('chatId'))
+        else:
+            # Marca como inativo se o período terminou
+            if hoje > fim:
+                try:
+                    db.collection("tratamentos").document(t.id).update({"status": "inativo"})
+                    logger.info("Marked tratamento id=%s as inativo", getattr(t, 'id', '<unknown>'))
+                except Exception:
+                    logger.exception("Failed to mark tratamento id=%s as inativo", getattr(t, 'id', '<unknown>'))
 
-#     # waha.stop_typing(chat_id=chat_id)
-
-#     return JSONResponse(status_code=200, content={"message": {"response": response_message}})
-
+    logger.info("send_daily_reminders finished — messages_sent=%d", sent)
