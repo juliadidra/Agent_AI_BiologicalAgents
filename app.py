@@ -85,7 +85,6 @@ def send_daily_reminders():
     hoje = date.today()
     logger.info("Running send_daily_reminders for date=%s", hoje.isoformat())
 
-    # Busca todos os tratamentos ativos
     try:
         tratamentos = db.collection("tratamentos").where("status", "==", "ativo").stream()
     except Exception:
