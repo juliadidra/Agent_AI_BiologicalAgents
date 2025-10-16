@@ -1,3 +1,4 @@
+import base64
 import io
 import json
 import os
@@ -73,11 +74,19 @@ def initialize_firebase():
     try:
         firebase_json = os.getenv("FIREBASE_CREDENTIALS")
         if firebase_json:
-            cred_dict = json.loads(firebase_json)
-            cred_dict["private_key"] = cred_dict["private_key"].replace('\\n', '\n')
+            try:
+                decoded = base64.b64decode(firebase_json)
+                cred_dict = json.loads(decoded.decode("utf-8"))
+            except Exception:
+                # se não for base64, tenta interpretar como JSON direto
+                try:
+                    cred_dict = json.loads(firebase_json)
+                except Exception:
+                    logger.exception("FIREBASE_CREDENTIALS não é um JSON válido nem um base64 de JSON")
+                    raise
 
             # cria Certificate a partir do dict em memória
-            cred = credentials.Certificate(io.StringIO(json.dumps(cred_dict)))
+            cred = credentials.Certificate(cred_dict)
         else:
             cred = credentials.Certificate("firebase-credentials.json")
 
