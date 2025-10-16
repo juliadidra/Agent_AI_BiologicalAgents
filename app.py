@@ -1,3 +1,4 @@
+import io
 import json
 import os
 from fastapi import FastAPI, Request
@@ -73,7 +74,10 @@ def initialize_firebase():
         firebase_json = os.getenv("FIREBASE_CREDENTIALS")
         if firebase_json:
             cred_dict = json.loads(firebase_json)
-            cred = credentials.Certificate.from_json(cred_dict)
+            cred_dict["private_key"] = cred_dict["private_key"].replace('\\n', '\n')
+
+            # cria Certificate a partir do dict em memória
+            cred = credentials.Certificate(io.StringIO(json.dumps(cred_dict)))
         else:
             cred = credentials.Certificate("firebase-credentials.json")
 
