@@ -1,3 +1,4 @@
+import json
 import os
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -72,7 +73,7 @@ def initialize_firebase():
         cred = os.getenv("FIREBASE_CREDENTIALS")
         if not cred:
             cred = credentials.Certificate("firebase-credentials.json")
-        
+        cred = json.loads(cred)
         firebase_admin.initialize_app(cred)
         db = firestore.client()
         logger.info("Firebase initialized")
