@@ -69,7 +69,7 @@ async def agent_webhook(request: Request):
 
     return JSONResponse(status_code=200, content={"message": "Message sent!"})
 
-@app.post('/agent/daily-reminders')
+
 def initialize_firebase():
     try:
         firebase_json = os.getenv("FIREBASE_CREDENTIALS")
@@ -98,7 +98,7 @@ def initialize_firebase():
         logger.exception("❌ Failed to initialize Firebase")
         raise
 
-
+@app.post('/agent/daily-reminders')
 def send_daily_reminders():
     db = initialize_firebase()
     waha_service = WahaService()
