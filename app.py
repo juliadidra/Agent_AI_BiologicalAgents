@@ -70,16 +70,19 @@ async def agent_webhook(request: Request):
 @app.post('/agent/daily-reminders')
 def initialize_firebase():
     try:
-        cred = os.getenv("FIREBASE_CREDENTIALS")
-        if not cred:
+        firebase_json = os.getenv("FIREBASE_CREDENTIALS")
+        if firebase_json:
+            cred_dict = json.loads(firebase_json)
+            cred = credentials.Certificate.from_json(cred_dict)
+        else:
             cred = credentials.Certificate("firebase-credentials.json")
-        cred = json.loads(cred)
+
         firebase_admin.initialize_app(cred)
         db = firestore.client()
-        logger.info("Firebase initialized")
+        logger.info("✅ Firebase initialized successfully")
         return db
     except Exception:
-        logger.exception("Failed to initialize Firebase (check firebase-credentials.json mount and contents)")
+        logger.exception("❌ Failed to initialize Firebase")
         raise
 
 
