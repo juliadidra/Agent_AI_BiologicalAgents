@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -68,7 +69,10 @@ async def agent_webhook(request: Request):
 @app.post('/agent/daily-reminders')
 def initialize_firebase():
     try:
-        cred = credentials.Certificate("firebase-credentials.json")
+        cred = os.getenv("FIREBASE_CREDENTIALS")
+        if not cred:
+            cred = credentials.Certificate("firebase-credentials.json")
+        
         firebase_admin.initialize_app(cred)
         db = firestore.client()
         logger.info("Firebase initialized")
