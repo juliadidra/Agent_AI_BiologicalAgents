@@ -1,36 +1,41 @@
-import os
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_chroma import Chroma
 from config.settings import Settings
-from langchain_community.document_loaders import PyPDFLoader
+import chromadb
+import cohere
+
 from langchain_huggingface import HuggingFaceEmbeddings
 
 properties = Settings()
 
-os.environ['GROQ_API_KEY'] = properties.GROQ_API_KEY
-os.environ['HUGGINGFACE_API_KEY'] = properties.HUGGINGFACE_API_KEY
+class VectorStore:
+    def __init__(self):
+        self.embedding = HuggingFaceEmbeddings()
+        self.vector_store = chromadb.CloudClient(
+        api_key=properties.CHROMA_API_KEY,
+        tenant='61e7981b-97e1-4d61-9631-874e85036da2',
+        database='tcc-ai-agent'
+        )
+        self.co = cohere.Client(properties.COHERE_API_KEY)
 
-if __name__ == '__main__':
-    file_path = '/app/services/rag/data/PCDT_Tratado.pdf'
-    loader = PyPDFLoader(file_path)
-    docs = loader.load()
+    def similarity_search(self, question):
+        collection = self.vector_store.get_collection(name='langchain')
+        print("Collection retrieved:", collection)
+        emb = self.embedding.embed_query(question)
+        print("Query embedding:", emb)
+        result = collection.query(
+            query_embeddings=[emb],
+            n_results=8
+        )
+        print("Raw retrieved result:", result)
+        documents = []
+        docs_list = result.get('documents', [[]])[0]
+        for text in docs_list:
+            documents.append(text)
 
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
-    )
-    chunks = text_splitter.split_documents(
-        documents=docs,
-    )
+        print("Retrieved docs:", documents)
 
-    #TODO: Posteriormente isolar a parte do banco de dados
-    persist_directory = '/app/chroma_data'
-
-    embedding = HuggingFaceEmbeddings()
-    vector_store = Chroma(
-        embedding_function=embedding,
-        persist_directory=persist_directory,
-    )
-    vector_store.add_documents(
-        documents=chunks,
-    )
+        rerank_docs = self.co.rerank(
+            query=question, documents=documents, top_n=8, model="rerank-multilingual-v3.0"
+        )
+        
+        final_doc_index = rerank_docs.results[0].index
+        return documents[final_doc_index]

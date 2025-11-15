@@ -11,3 +11,5 @@ class Settings:
         self.GROQ_API_KEY = os.getenv('GROQ_API_KEY')
         self.HUGGINGFACE_API_KEY = os.getenv('HUGGINGFACE_API_KEY')
         self.GROQ_AI_MODEL = os.getenv('GROQ_AI_MODEL')
+        self.COHERE_API_KEY = os.getenv('COHERE_API_KEY')
+        self.CHROMA_API_KEY = os.getenv('CHROMA_API_KEY')
