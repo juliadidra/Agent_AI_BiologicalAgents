@@ -13,3 +13,5 @@ class Settings:
         self.GROQ_AI_MODEL = os.getenv('GROQ_AI_MODEL')
         self.COHERE_API_KEY = os.getenv('COHERE_API_KEY')
         self.CHROMA_API_KEY = os.getenv('CHROMA_API_KEY')
+        self.CHROMA_TENANT_ID = os.getenv('CHROMA_TENANT_ID')
+        self.CHROMA_DATABASE = os.getenv('CHROMA_DATABASE')

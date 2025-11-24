@@ -8,6 +8,8 @@ from services.rag.rag_service import VectorStore
 from tools.medical_reminder_tool import cancel_medication_treatment, schedule_medication_treatment
 import logging
 from tools.get_user_information_tool import UserInformationTool, get_user_information
+from langchain.memory import ConversationSummaryMemory
+from langchain.schema import SystemMessage, HumanMessage, AIMessage
 logging.basicConfig(level=logging.DEBUG)
 
 
@@ -18,35 +20,27 @@ class AIAgentService:
         properties = Settings()
         os.environ['GROQ_API_KEY'] = properties.GROQ_API_KEY
         tool = [schedule_medication_treatment, get_user_information, cancel_medication_treatment]
-        chat = ChatGroq(model=properties.GROQ_AI_MODEL) #estudar o chatgroq e o porque o agente age como se nao fosse um chat e sim um prompt normal
+        chat = ChatGroq(model=properties.GROQ_AI_MODEL)
         self.__chat = chat.bind_tools(tools=tool)
-        print("Chat model initialized with tools:", self.__chat)
+        logging.info("Chat model initialized with tools: %s", self.__chat)
+        summary_chat = ChatGroq(model=properties.GROQ_AI_MODEL, temperature=0)
+        self.memory = ConversationSummaryMemory(llm=summary_chat, return_messages=True)
 
     def create_prompt(self, history_messages, question, chat_id):
 
         user_info = UserInformationTool().get_user_info(chat_id)
-        print("User info retrieved:", user_info)
+        logging.info("User info retrieved:", user_info)
         hoje = date.today().isoformat()
-
         docs_content = VectorStore().similarity_search(question)
-        print("pure docs:", docs_content)
+        logging.info("doc retrieved:  %s", docs_content)
 
         #TODO:  montar as mensagens usando langchain (usar o history_messages da propria llm?, usar algum metodo do langchain para resgatar os docs)
         
-        # Monte as mensagens para o modelo
-        print("Retrieved docs for prompt context:", docs_content)
-        # messages = [
-        #     {"role": "system", "content": SYSTEM_TEMPLATE.replace("{context}", docs_content)}
-        # ]
 
         filtered_history = [m for m in history_messages if m.get('body') and m.get('body').strip()]
 
         #TODO: aplicar o ConversationSummaryMemory do langchain para resumir o historico de mensagens
 
-        #PROBLEMA: O historico esta indo de forma amontoada, sem diferenciar as mensagens do usuario e do assistente. logo, a ultima mensagem do usuario esta indo no historico sem ser diferenciada (o modelo se perde pois nao sabe qual foi a ultima pergunta do usuario)
-
-        # possiveis solucoes:
-        # 1. separar o historico de mensagens (enviando no system prompt) da ultima pergunta ou mensagem do usuario (enviando como mensagem do user)
         # 2. usar o ConversationSummaryMemory do langchain para resumir o historico (enviar no system prompt) e deixar apenas a ultima mensagem do usuario como mensagem do user.]
         env = Environment(loader=FileSystemLoader("prompts"))
         template = env.get_template("prompt_template.jinja")
@@ -55,10 +49,24 @@ class AIAgentService:
         for message in filtered_history:
             role = "assistant" if message.get('fromMe') else "user"
             history_messages_chat.append({"role": role, "content": message.get('body')})
-        # messages.append({"role": "user", "content": question})
 
         #TODO: ajeitar isso aq dps
         history_chat_text = "\n".join(f"{m['role']}: {m['content']}" for m in history_messages_chat) if history_messages_chat else ""
+ 
+
+        # Converter o histórico para objetos de mensagemdo langchain antes de resumir
+        message_objs = []
+        for m in history_messages_chat:
+            if m['role'] == "assistant":
+                message_objs.append(AIMessage(content=m['content']))
+            elif m['role'] == "system":
+                message_objs.append(SystemMessage(content=m['content']))
+            else:
+                message_objs.append(HumanMessage(content=m['content']))
+
+        previous_summary = ""
+        history_chat_text = self.memory.predict_new_summary(message_objs, previous_summary)
+        logging.info("Summary of previous conversation: %s", history_chat_text)   
 
         messages = [
             {"role": "system", "content": template.render({"hoje": hoje, "chat_id": chat_id, "context": docs_content, "history_messages": history_chat_text, "user_info": json.dumps(user_info)})},
@@ -66,16 +74,13 @@ class AIAgentService:
         ]
 
 
-        print("Messages sent to the model:", messages)
-        # ----------------------------------------------------------------------------------------------------------------------
+        logging.info("Messages sent to the model: %s", messages)
         try:
             response = self.__chat.invoke(messages)
-            print("response:", response)
-            #TODO: caso seja necessario criar novas tools, verificar a alternativa de criar um mcp server
+            logging.info("response: %s", response)
 
-            # As tools nao sao chamadas em tempo de execução (ou seja, o modelo nao chama as tools antes de gerar uma resposta e sim depois), isso nao é util para o proposito das tools (que é auxiliar o modelo a gerar respostas com base em dados externos)
             if hasattr(response, "tool_calls"):
-                print("[LOG] Tool chamada pela IA:", response.tool_calls) #TODO: remover, criar um servico de log
+                logging.info("Tool chamada pela IA: %s", response.tool_calls)
                 for tool_call in response.tool_calls:
                     tool_name = tool_call["name"]
                     args = tool_call["args"]

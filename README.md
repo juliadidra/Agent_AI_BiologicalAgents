@@ -9,7 +9,11 @@
 ## Env variables
 HUGGINGFACE_API_KEY=
 GROQ_API_KEY=
-GROQ_AI_MODEL=llama-3.3-70b-versatile
+GROQ_AI_MODEL=qwen/qwen3-32b
 WAHA_URL=http://waha:3000
+COHERE_API_KEY=
+CHROMA_API_KEY=
+CHROMA_TENANT_ID=
+CHROMA_DATABASE=tcc-ai-agent
 
 
