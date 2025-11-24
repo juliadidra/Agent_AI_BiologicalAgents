@@ -24,7 +24,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(asctime)s %
 logger = logging.getLogger(__name__)
 
 
-
+#TODO: criar funcao de inicializacao do firebase reutilizavel
 def initialize_firebase():
     try:
         firebase_json = os.getenv("FIREBASE_CREDENTIALS")
@@ -53,6 +53,7 @@ def initialize_firebase():
 
 app = FastAPI()
 
+#TODO: configurar cors adequadamente
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -63,7 +64,7 @@ app.add_middleware(
 
 db = initialize_firebase()
 
-
+#TODO: adicionar autenticação nos endpoints (ex: token simples no header), criar objetos de request/response (para deixar mais claro o que é esperado)
 @app.post('/agent/webhook')
 async def agent_webhook(request: Request):
     data = await request.json()
@@ -90,7 +91,7 @@ async def agent_webhook(request: Request):
 
     waha.start_typing(chat_id=chat_id)
 
-    history_messages = waha.get_history_messages(chat_id=chat_id, limit=10)
+    history_messages = waha.get_history_messages(chat_id=chat_id, limit=5)
 
     response_message = ai_agent.create_prompt(history_messages=history_messages, question=received_message, chat_id=chat_id)
     print("response_message: ", response_message)

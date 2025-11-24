@@ -1,41 +1,18 @@
-version: "3.9"
-
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile.app
-    container_name: app
+  waha:
+    image: devlikeapro/waha:latest
+    container_name: Ai_agent_biologicalAgents_waha
     restart: always
     ports:
-      - "80:80"   # porta pública
-    volumes:
-      - .:/app
-      - ./chroma_data:/app/chroma_data
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./firebase-credentials.json:/app/firebase-credentials.json:ro
-    environment:
-      - WAHA_DASHBOARD_ENABLED=true
-      - WAHA_DASHBOARD_USERNAME=xxx
-      - WAHA_DASHBOARD_PASSWORD=xxx
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-credentials.json
-      - SCHEDULE_TIME=09:00
-      - TZ=America/Sao_Paulo
+      - '3000:3000'
 
-  scheduler:
+  api:
     build:
       context: .
-      dockerfile: Dockerfile.scheduler
-    container_name: send_daily_reminders
-    depends_on:
-      - app
+      dockerfile: Dockerfile
+    container_name: wpp_agent_api
+    ports:
+      - '8000:8000'
     volumes:
       - .:/app
-      - ./chroma_data:/app/chroma_data
-      - ./firebase-credentials.json:/app/firebase-credentials.json:ro
-    environment:
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-credentials.json
-      - WAHA_URL=http://app:3000
-      - SCHEDULE_TIME=09:00
-      - TZ=America/Sao_Paulo
-    restart: always
+    command: uvicorn app:app --host 0.0.0.0 --port 8000 --reload
