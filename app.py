@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from prompts.default_message import DEFAULT_MESSAGE
 from services.groq_ai.agent_ai_service import AIAgentService
 from services.waha.waha_service import WahaService
 import logging
@@ -92,6 +93,9 @@ async def agent_webhook(request: Request):
     waha.start_typing(chat_id=chat_id)
 
     history_messages = waha.get_history_messages(chat_id=chat_id, limit=5)
+
+    if (not history_messages or len(history_messages) == 0):
+        waha.send_message(chat_id=chat_id, message=DEFAULT_MESSAGE)
 
     response_message = ai_agent.create_prompt(history_messages=history_messages, question=received_message, chat_id=chat_id)
     print("response_message: ", response_message)

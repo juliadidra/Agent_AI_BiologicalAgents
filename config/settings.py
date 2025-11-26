@@ -15,3 +15,4 @@ class Settings:
         self.CHROMA_API_KEY = os.getenv('CHROMA_API_KEY')
         self.CHROMA_TENANT_ID = os.getenv('CHROMA_TENANT_ID')
         self.CHROMA_DATABASE = os.getenv('CHROMA_DATABASE')
+        self.WAHA_API_KEY = os.getenv('WAHA_API_KEY')

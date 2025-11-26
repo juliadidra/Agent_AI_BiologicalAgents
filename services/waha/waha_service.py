@@ -17,7 +17,10 @@ class WahaService:
             return None
 
         url = f"{self.base_url}/api/sendText"
-        headers = {'Content-Type': 'application/json'}
+        headers = {
+            "Authorization": f"Bearer {self.properties.WAHA_API_KEY}",
+            "Content-Type": "application/json"
+        }
         payload = {"session": "default", "chatId": chat_id, "text": message}
         try:
             response = requests.post(url=url, json=payload, headers=headers, timeout=10)
@@ -37,7 +40,10 @@ class WahaService:
             return None
 
         url = f"{self.base_url}/api/startTyping"
-        headers = {'Content-Type': 'application/json'}
+        headers = {
+            "Authorization": f"Bearer {self.properties.WAHA_API_KEY}",
+            "Content-Type": "application/json"
+        }
         payload = {"session": "default", "chatId": chat_id}
         try:
             response = requests.post(url=url, json=payload, headers=headers, timeout=10)
@@ -49,7 +55,10 @@ class WahaService:
 
     def stop_typing(self, chat_id):
         url = f"{self.base_url}/api/stopTyping"
-        headers = {'Content-Type': 'application/json'}
+        headers = {
+            "Authorization": f"Bearer {self.properties.WAHA_API_KEY}",
+            "Content-Type": "application/json"
+        }
         payload = {"session": "default", "chatId": chat_id}
         try:
             response = requests.post(url=url, json=payload, headers=headers, timeout=10)
@@ -61,7 +70,10 @@ class WahaService:
 
     def get_history_messages(self, chat_id, limit):
         url = f'{self.base_url}/api/default/chats/{chat_id}/messages?limit={limit}&downloadMedia=false'
-        headers = {'Content-Type': 'application/json'}
+        headers = {
+            "Authorization": f"Bearer {self.properties.WAHA_API_KEY}",
+            "Content-Type": "application/json"
+        }
         try:
             response = requests.get(url=url, headers=headers, timeout=10)
             response.raise_for_status()
