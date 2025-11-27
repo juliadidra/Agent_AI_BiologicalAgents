@@ -18,7 +18,7 @@ class WahaService:
 
         url = f"{self.base_url}/api/sendText"
         headers = {
-            "Authorization": f"Bearer {self.properties.WAHA_API_KEY}",
+            "X-Api-Key": f"Bearer {self.properties.WAHA_API_KEY}",
             "Content-Type": "application/json"
         }
         payload = {"session": "default", "chatId": chat_id, "text": message}
@@ -41,7 +41,7 @@ class WahaService:
 
         url = f"{self.base_url}/api/startTyping"
         headers = {
-            "Authorization": f"Bearer {self.properties.WAHA_API_KEY}",
+            "X-Api-Key": f"Bearer {self.properties.WAHA_API_KEY}",
             "Content-Type": "application/json"
         }
         payload = {"session": "default", "chatId": chat_id}
@@ -56,7 +56,7 @@ class WahaService:
     def stop_typing(self, chat_id):
         url = f"{self.base_url}/api/stopTyping"
         headers = {
-            "Authorization": f"Bearer {self.properties.WAHA_API_KEY}",
+            "X-Api-Key": f"Bearer {self.properties.WAHA_API_KEY}",
             "Content-Type": "application/json"
         }
         payload = {"session": "default", "chatId": chat_id}
@@ -71,7 +71,7 @@ class WahaService:
     def get_history_messages(self, chat_id, limit):
         url = f'{self.base_url}/api/default/chats/{chat_id}/messages?limit={limit}&downloadMedia=false'
         headers = {
-            "Authorization": f"Bearer {self.properties.WAHA_API_KEY}",
+            "X-Api-Key": f"Bearer {self.properties.WAHA_API_KEY}",
             "Content-Type": "application/json"
         }
         try:
