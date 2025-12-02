@@ -94,12 +94,23 @@ async def agent_webhook(request: Request):
     waha.start_typing(chat_id=chat_id)
 
     history_messages = waha.get_history_messages(chat_id=chat_id, limit=12)
-
     logger.info("History messages: %s", history_messages)
 
-    if (not history_messages or len(history_messages) == 0):
+    # Filtra mensagens com conteúdo válido
+    filtered_history = [m for m in history_messages if m.get('body') and m.get('body').strip()]
+    
+    assistant_messages = [m for m in filtered_history if m.get('fromMe') is True]
+
+    is_first_interaction = len(assistant_messages) == 0
+
+    if is_first_interaction:
+        # Primeira conversa → enviar mensagem padrão
         default_message = waha.send_message(chat_id=chat_id, message=DEFAULT_MESSAGE)
-        return JSONResponse(status_code=200, content={"message": "Default message sent!", "response": default_message})
+        return JSONResponse(
+            status_code=200,
+            content={"message": "Default message sent!", "response": default_message}
+        )
+
 
     response_message = ai_agent.create_prompt(history_messages=history_messages, question=received_message, chat_id=chat_id)
     print("response_message: ", response_message)
