@@ -95,6 +95,8 @@ async def agent_webhook(request: Request):
 
     history_messages = waha.get_history_messages(chat_id=chat_id, limit=12)
 
+    logger.info("History messages: %s", history_messages)
+
     if (not history_messages or len(history_messages) == 0):
         default_message = waha.send_message(chat_id=chat_id, message=DEFAULT_MESSAGE)
         return JSONResponse(status_code=200, content={"message": "Default message sent!", "response": default_message})
