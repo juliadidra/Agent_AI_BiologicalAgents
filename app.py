@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from config.settings import Settings
 from prompts.default_message import DEFAULT_MESSAGE
 from services.groq_ai.agent_ai_service import AIAgentService
 from services.waha.waha_service import WahaService
@@ -53,13 +54,13 @@ def initialize_firebase():
         raise
 
 app = FastAPI()
-
+settings = Settings()
 #TODO: configurar cors adequadamente
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.ALLOW_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -92,10 +93,11 @@ async def agent_webhook(request: Request):
 
     waha.start_typing(chat_id=chat_id)
 
-    history_messages = waha.get_history_messages(chat_id=chat_id, limit=5)
+    history_messages = waha.get_history_messages(chat_id=chat_id, limit=12)
 
     if (not history_messages or len(history_messages) == 0):
-        waha.send_message(chat_id=chat_id, message=DEFAULT_MESSAGE)
+        default_message = waha.send_message(chat_id=chat_id, message=DEFAULT_MESSAGE)
+        return JSONResponse(status_code=200, content={"message": "Default message sent!", "response": default_message})
 
     response_message = ai_agent.create_prompt(history_messages=history_messages, question=received_message, chat_id=chat_id)
     print("response_message: ", response_message)
@@ -108,7 +110,6 @@ async def agent_webhook(request: Request):
 
 @app.post('/agent/daily-reminders')
 def send_daily_reminders():
-    # db = initialize_firebase()
     waha_service = WahaService()
 
     hoje = date.today()

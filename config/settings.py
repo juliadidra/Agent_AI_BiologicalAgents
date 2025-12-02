@@ -1,3 +1,4 @@
+import json
 from dotenv import load_dotenv
 import os
 
@@ -16,3 +17,4 @@ class Settings:
         self.CHROMA_TENANT_ID = os.getenv('CHROMA_TENANT_ID')
         self.CHROMA_DATABASE = os.getenv('CHROMA_DATABASE')
         self.WAHA_API_KEY = os.getenv('WAHA_API_KEY')
+        self.ALLOW_ORIGINS = json.loads(os.getenv('ALLOW_ORIGINS', "[]").strip())
