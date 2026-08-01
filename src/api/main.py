@@ -18,6 +18,7 @@ from src.core.firebase import initialize_firebase
 from src.core.logging import setup_logging
 from src.core.settings import Settings, get_settings
 from src.api.routes import reminders as reminders_route
+from src.api.routes import test_message as test_message_route
 from src.api.routes import webhook as webhook_route
 from src.prompts.guardrail_policy import GUARDRAIL_POLICY
 from src.services.conversation_service import ConversationService
@@ -144,3 +145,4 @@ app.add_middleware(
 
 app.include_router(webhook_route.router)
 app.include_router(reminders_route.router)
+app.include_router(test_message_route.router)
