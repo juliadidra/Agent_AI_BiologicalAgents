@@ -2,6 +2,8 @@ from langchain.memory import ConversationSummaryMemory
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from langchain_groq import ChatGroq
 
+from src.core.text import strip_reasoning
+
 
 class LangChainSummarizer:
     def __init__(self, api_key: str, model: str):
@@ -21,4 +23,4 @@ class LangChainSummarizer:
                 objs.append(SystemMessage(content=content))
             else:
                 objs.append(HumanMessage(content=content))
-        return self._memory.predict_new_summary(objs, "")
+        return strip_reasoning(self._memory.predict_new_summary(objs, ""))

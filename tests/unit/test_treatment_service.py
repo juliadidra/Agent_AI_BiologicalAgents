@@ -1,18 +1,16 @@
 from src.ports.treatment_repository import Treatment
 from src.services.treatment_service import TreatmentService
-from tests.fakes.fake_messaging import FakeMessagingGateway
 from tests.fakes.fake_treatment_repository import FakeTreatmentRepository
 
 
 def _build(initial=None):
     repo = FakeTreatmentRepository(initial=initial)
-    messaging = FakeMessagingGateway()
-    service = TreatmentService(treatment_repository=repo, messaging=messaging)
-    return service, repo, messaging
+    service = TreatmentService(treatment_repository=repo)
+    return service, repo
 
 
-def test_schedule_creates_treatment_and_sends_confirmation():
-    service, repo, messaging = _build()
+def test_schedule_creates_treatment_and_returns_confirmation():
+    service, repo = _build()
 
     result = service.schedule(
         chat_id="abc@c.us",
@@ -22,10 +20,10 @@ def test_schedule_creates_treatment_and_sends_confirmation():
         fim="2026-06-22",
     )
 
-    assert "Truvada" in result and "registrado" in result
+    assert "Truvada" in result and "Agendamento concluído" in result
+    assert "fim=2026-06-22" in result
     assert len(repo._items) == 1
     assert repo._items[0].medicamento == "Truvada"
-    assert messaging.sent == [("abc@c.us", result)]
 
 
 def test_schedule_does_not_duplicate_active_treatment():
@@ -38,7 +36,7 @@ def test_schedule_does_not_duplicate_active_treatment():
         fim="2026-05-31",
         status="ativo",
     )
-    service, repo, messaging = _build(initial=[existing])
+    service, repo = _build(initial=[existing])
 
     result = service.schedule(
         chat_id="abc@c.us",
@@ -50,10 +48,9 @@ def test_schedule_does_not_duplicate_active_treatment():
 
     assert "já está ativo" in result
     assert len(repo._items) == 1
-    assert messaging.sent == []
 
 
-def test_cancel_removes_active_treatment_and_notifies():
+def test_cancel_removes_active_treatment():
     existing = Treatment(
         id="1",
         chat_id="abc@c.us",
@@ -63,26 +60,24 @@ def test_cancel_removes_active_treatment_and_notifies():
         fim="2026-05-31",
         status="ativo",
     )
-    service, repo, messaging = _build(initial=[existing])
+    service, repo = _build(initial=[existing])
 
     result = service.cancel(chat_id="abc@c.us", medicamento="Truvada")
 
-    assert "cancelado" in result
+    assert "Cancelamento concluído" in result and "Truvada" in result
     assert repo._items == []
-    assert len(messaging.sent) == 1
 
 
-def test_cancel_when_nothing_active_returns_message_and_does_not_notify():
-    service, repo, messaging = _build()
+def test_cancel_when_nothing_active_returns_message():
+    service, _ = _build()
 
     result = service.cancel(chat_id="abc@c.us", medicamento="Truvada")
 
     assert "Não há tratamento ativo" in result
-    assert messaging.sent == []
 
 
 def test_get_summary_returns_falsey_dict_when_no_treatment():
-    service, _, _ = _build()
+    service, _ = _build()
     summary = service.get_summary("abc@c.us")
     assert summary == {"has_active_treatment": False, "has_daily_reminders": False}
 
@@ -94,7 +89,7 @@ def test_get_summary_prefers_active_treatment():
         Treatment(id="2", chat_id="abc@c.us", medicamento="Truvada", tratamento="HIV",
                   inicio="2026-05-01", fim="2026-05-31", status="ativo"),
     ]
-    service, _, _ = _build(initial=existing)
+    service, _ = _build(initial=existing)
 
     summary = service.get_summary("abc@c.us")
 

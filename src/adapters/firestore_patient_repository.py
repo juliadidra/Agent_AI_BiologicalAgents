@@ -45,3 +45,15 @@ class FirestorePatientRepository:
             created_at=now,
             updated_at=now,
         )
+
+    def save_health_state(self, chat_id: str, health_state: dict) -> PatientProfile:
+        now = datetime.now().isoformat()
+        self._collection().document(chat_id).set(
+            {
+                "chatId": chat_id,
+                "healthState": health_state,
+                "updatedAt": now,
+            },
+            merge=True,
+        )
+        return self.get_profile(chat_id)

@@ -1,5 +1,7 @@
 from typing import Any
 
+from src.services.agent_context import AgentContext
+
 
 class FakeLLMResponse:
     def __init__(self, content: str = "", tool_calls: list[dict] | None = None):
@@ -15,6 +17,30 @@ class FakeLLM:
     def invoke(self, messages: list[Any]) -> FakeLLMResponse:
         self.calls.append(messages)
         return self.response
+
+
+class FakeSequenceLLM:
+    """Retorna respostas em sequência (para testar o loop agêntico).
+    A última resposta é repetida caso o loop invoque mais vezes."""
+
+    def __init__(self, responses: list[FakeLLMResponse]):
+        self.responses = responses
+        self.calls: list[list[Any]] = []
+
+    def invoke(self, messages: list[Any]) -> FakeLLMResponse:
+        self.calls.append(list(messages))
+        index = min(len(self.calls) - 1, len(self.responses) - 1)
+        return self.responses[index]
+
+
+class FakeAgent:
+    def __init__(self, reply: str = "resposta do agente"):
+        self.reply = reply
+        self.calls: list[AgentContext] = []
+
+    def handle(self, ctx: AgentContext) -> str:
+        self.calls.append(ctx)
+        return self.reply
 
 
 class FakeGuardrail:

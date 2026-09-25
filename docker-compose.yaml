@@ -6,6 +6,8 @@ services:
     ports:
       - '3000:3000'
     environment:
+      # NOWEB não usa Puppeteer/whatsapp-web.js — evita o bug parseMessageIdSerialized da engine WEBJS
+      - WHATSAPP_DEFAULT_ENGINE=NOWEB
       - WAHA_API_KEY=${WAHA_API_KEY}
       - WAHA_DASHBOARD_USERNAME=${WAHA_DASHBOARD_USERNAME}
       - WAHA_DASHBOARD_PASSWORD=${WAHA_DASHBOARD_PASSWORD}

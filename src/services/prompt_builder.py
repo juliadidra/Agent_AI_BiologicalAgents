@@ -1,5 +1,5 @@
 import json
-from typing import Any, Optional
+from typing import Any
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -8,30 +8,21 @@ class PromptBuilder:
     def __init__(
         self,
         template_dir: str = "src/prompts",
-        template_name: str = "prompt_template.jinja",
     ):
         env = Environment(loader=FileSystemLoader(template_dir))
-        self._template = env.get_template(template_name)
+        env.filters["json_pt"] = lambda v: json.dumps(v, ensure_ascii=False)
+        self._env = env
 
     def build(
         self,
-        *,
+        template_name: str,
         question: str,
-        today: str,
-        chat_id: str,
-        context_docs: list[str],
-        history_summary: str,
-        treatment_info: dict[str, Any],
-        patient_profile: Optional[dict[str, Any]] = None,
+        **context: Any,
     ) -> list[dict[str, str]]:
-        system_content = self._template.render(
-            hoje=today,
-            chat_id=chat_id,
-            context=context_docs,
-            history_messages=history_summary,
-            user_info=json.dumps(treatment_info, ensure_ascii=False),
-            patient_profile=patient_profile or {},
-        )
+        """Renderiza `template_name` com `context` como mensagem de sistema e
+        retorna a lista [system, user] pronta para o LLM."""
+        template = self._env.get_template(template_name)
+        system_content = template.render(**context)
         return [
             {"role": "system", "content": system_content},
             {"role": "user", "content": question},

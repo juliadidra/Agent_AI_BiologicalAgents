@@ -21,3 +21,9 @@ class FakePatientRepository:
                 updated_at="2026-05-23T00:00:00",
             )
         return self._items[chat_id]
+
+    def save_health_state(self, chat_id: str, health_state: dict) -> PatientProfile:
+        profile = self.ensure_exists(chat_id)
+        profile.health_state = dict(health_state)
+        profile.updated_at = "2026-05-23T12:00:00"
+        return profile

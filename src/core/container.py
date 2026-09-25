@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from src.ports.vector_retriever import VectorRetriever
     from src.services.conversation_service import ConversationService
     from src.services.inbox_service import InboxService
+    from src.services.orchestrator_agent import OrchestratorAgent
     from src.services.patient_service import PatientService
     from src.services.prompt_builder import PromptBuilder
     from src.services.rag_pipeline import RagPipeline
@@ -30,7 +31,7 @@ class Container:
     firestore: Client
 
     messaging: Optional["MessagingGateway"] = None
-    llm: Optional["LLMProvider"] = None
+    llm_tools: Optional["LLMProvider"] = None
     guardrail: Optional["GuardrailProvider"] = None
     embedder: Optional["Embedder"] = None
     vector_retriever: Optional["VectorRetriever"] = None
@@ -45,5 +46,6 @@ class Container:
     treatment_service: Optional["TreatmentService"] = None
     patient_service: Optional["PatientService"] = None
     reminder_service: Optional["ReminderService"] = None
+    orchestrator: Optional["OrchestratorAgent"] = None
     conversation_service: Optional["ConversationService"] = None
     inbox_service: Optional["InboxService"] = None

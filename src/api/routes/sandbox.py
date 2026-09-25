@@ -12,7 +12,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-class TestMessageRequest(BaseModel):
+class SandboxMessageRequest(BaseModel):
     """Simula uma mensagem chegando, roda o fluxo do agente e devolve a
     resposta no corpo HTTP — sem passar pelo WhatsApp/WAHA."""
 
@@ -46,32 +46,31 @@ class TestMessageRequest(BaseModel):
     )
 
 
-class TestMessageResponse(BaseModel):
+class SandboxMessageResponse(BaseModel):
     chat_id: str
     message: str
     answer: str
 
 
-@router.post("/agent/test-message", response_model=TestMessageResponse)
-async def test_message(
-    payload: TestMessageRequest,
+@router.post("/agent/test-message", response_model=SandboxMessageResponse)
+async def send_test_message(
+    payload: SandboxMessageRequest,
     conversation: ConversationService = Depends(get_conversation_service),
 ):
     """Endpoint de teste do fluxo do agente.
 
     Chama `ConversationService.handle_incoming` diretamente e retorna a
-    resposta do agente. Atenção: dispara chamadas reais de LLM/RAG e, se o
-    agente agendar/cancelar tratamento, o `TreatmentService` ainda envia a
-    confirmação via WAHA como efeito colateral.
+    resposta do agente, sem WAHA. Atenção: dispara chamadas reais de
+    LLM/RAG (Groq/Chroma/Cohere).
     """
-    logger.info("Test message received for chat_id=%s", payload.chat_id)
+    logger.info("Sandbox message received for chat_id=%s", payload.chat_id)
     answer = await run_in_threadpool(
         conversation.handle_incoming,
         payload.chat_id,
         payload.message,
         payload.history,
     )
-    return TestMessageResponse(
+    return SandboxMessageResponse(
         chat_id=payload.chat_id,
         message=payload.message,
         answer=answer,

@@ -1,7 +1,6 @@
 import logging
 from typing import Any, Optional
 
-from src.ports.messaging import MessagingGateway
 from src.ports.treatment_repository import TreatmentRepository
 
 logger = logging.getLogger(__name__)
@@ -11,10 +10,8 @@ class TreatmentService:
     def __init__(
         self,
         treatment_repository: TreatmentRepository,
-        messaging: MessagingGateway,
     ):
         self._repo = treatment_repository
-        self._messaging = messaging
 
     def schedule(
         self,
@@ -35,12 +32,14 @@ class TreatmentService:
             inicio=inicio,
             fim=fim,
         )
-        confirmation = (
-            f"✅ Seu tratamento com {medicamento} ({tratamento}) foi registrado. "
-            f"Você receberá lembretes diários até {fim}."
+        # Resultado factual para a LLM (fonte da verdade): quem redige a
+        # mensagem final ao paciente é o turno seguinte do agente. Sem envio
+        # direto aqui — evita mensagem duplicada.
+        return (
+            f"Agendamento concluído. Dados confirmados: medicamento={medicamento}, "
+            f"tratamento={tratamento}, inicio={inicio}, fim={fim}. "
+            f"Lembretes diários ativos até {fim}."
         )
-        self._messaging.send(chat_id, confirmation)
-        return confirmation
 
     def cancel(
         self,
@@ -52,9 +51,11 @@ class TreatmentService:
         if cancelled == 0:
             return f"Não há tratamento ativo com {medicamento} para cancelar."
 
-        confirmation = f"❌ Seu tratamento com {medicamento} foi cancelado."
-        self._messaging.send(chat_id, confirmation)
-        return confirmation
+        return (
+            f"Cancelamento concluído. Dados confirmados: medicamento={medicamento}"
+            + (f", tratamento={tratamento}" if tratamento else "")
+            + ". Lembretes diários encerrados."
+        )
 
     def get_summary(self, chat_id: str) -> dict[str, Any]:
         treatments = self._repo.find_active_by_chat(chat_id)

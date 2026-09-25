@@ -18,11 +18,12 @@ from src.core.firebase import initialize_firebase
 from src.core.logging import setup_logging
 from src.core.settings import Settings, get_settings
 from src.api.routes import reminders as reminders_route
-from src.api.routes import test_message as test_message_route
+from src.api.routes import sandbox as sandbox_route
 from src.api.routes import webhook as webhook_route
 from src.prompts.guardrail_policy import GUARDRAIL_POLICY
 from src.services.conversation_service import ConversationService
 from src.services.inbox_service import InboxService
+from src.services.orchestrator_agent import OrchestratorAgent
 from src.services.patient_service import PatientService
 from src.services.prompt_builder import PromptBuilder
 from src.services.rag_pipeline import RagPipeline
@@ -54,9 +55,11 @@ def _build_container(settings: Settings) -> Container:
     patient_repository = FirestorePatientRepository(firestore=firestore_client)
 
     tool_registry = ToolRegistry(local_tools=LOCAL_TOOLS)
-    llm = GroqLLM(
+    # Orquestrador faz tool-calling: usa um modelo bom em tools (não-reasoning).
+    tools_model = settings.GROQ_AI_TOOLS_MODEL or settings.GROQ_AI_MODEL
+    llm_tools = GroqLLM(
         api_key=settings.GROQ_API_KEY,
-        model=settings.GROQ_AI_MODEL,
+        model=tools_model,
         tools=tool_registry.get_tools(),
     )
     guardrail = GroqGuardrail(
@@ -77,22 +80,25 @@ def _build_container(settings: Settings) -> Container:
     prompt_builder = PromptBuilder()
     treatment_service = TreatmentService(
         treatment_repository=treatment_repository,
-        messaging=messaging,
     )
     patient_service = PatientService(patient_repository=patient_repository)
     reminder_service = ReminderService(
         treatment_repository=treatment_repository,
         messaging=messaging,
     )
+
+    orchestrator = OrchestratorAgent(
+        llm=llm_tools,
+        tool_registry=tool_registry,
+        prompt_builder=prompt_builder,
+    )
+
     conversation_service = ConversationService(
         guardrail=guardrail,
+        orchestrator=orchestrator,
         patient_service=patient_service,
         treatment_service=treatment_service,
-        rag_pipeline=rag_pipeline,
         summarizer=summarizer,
-        prompt_builder=prompt_builder,
-        llm=llm,
-        tool_registry=tool_registry,
     )
     inbox_service = InboxService(
         conversation_service=conversation_service,
@@ -104,7 +110,7 @@ def _build_container(settings: Settings) -> Container:
         settings=settings,
         firestore=firestore_client,
         messaging=messaging,
-        llm=llm,
+        llm_tools=llm_tools,
         guardrail=guardrail,
         embedder=embedder,
         vector_retriever=vector_retriever,
@@ -118,6 +124,7 @@ def _build_container(settings: Settings) -> Container:
         treatment_service=treatment_service,
         patient_service=patient_service,
         reminder_service=reminder_service,
+        orchestrator=orchestrator,
         conversation_service=conversation_service,
         inbox_service=inbox_service,
     )
@@ -145,4 +152,4 @@ app.add_middleware(
 
 app.include_router(webhook_route.router)
 app.include_router(reminders_route.router)
-app.include_router(test_message_route.router)
+app.include_router(sandbox_route.router)

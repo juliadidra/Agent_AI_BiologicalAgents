@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str
     GROQ_AI_MODEL: str
     GROQ_AI_GUARDRAILS_MODEL: str
+    # Modelo do orquestrador (tool-calling). Recomenda-se um modelo não-reasoning
+    # e bom em tools (ex.: llama-3.3-70b-versatile). Se ausente, cai em GROQ_AI_MODEL.
+    GROQ_AI_TOOLS_MODEL: str | None = None
 
     WAHA_URL: str = "http://waha:3000"
     WAHA_API_KEY: str
